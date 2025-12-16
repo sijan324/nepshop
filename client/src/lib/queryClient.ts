@@ -32,6 +32,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const apiBase = import.meta.env.VITE_API_URL || "";
     const baseUrl = queryKey[0] as string;
     const params = queryKey[1];
     
@@ -50,8 +51,10 @@ export const getQueryFn: <T>(options: {
     } else if (params && typeof params === "string") {
       url = `${baseUrl}/${params}`;
     }
+
+    const fullUrl = url.startsWith("/api") ? `${apiBase}${url}` : url;
     
-    const res = await fetch(url, {
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 

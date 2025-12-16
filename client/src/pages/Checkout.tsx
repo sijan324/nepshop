@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Layout } from "@/components/layout/Layout";
 import { formatPrice, cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
 
 const checkoutSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
@@ -68,21 +69,15 @@ export default function Checkout() {
     if (!code) return;
 
     try {
-      const response = await fetch(`/api/coupons/validate?code=${code}`, {
-        credentials: "include",
-      });
-      if (response.ok) {
-        const coupon = await response.json();
-        const discountAmount = coupon.discountType === "percentage"
-          ? (subtotal * parseFloat(coupon.discountValue)) / 100
-          : parseFloat(coupon.discountValue);
-        setAppliedCoupon({ code: coupon.code, discount: discountAmount });
-        toast({ title: "Coupon applied!", description: `You saved ${formatPrice(discountAmount)}` });
-      } else {
-        toast({ title: "Invalid coupon", description: "This coupon code is not valid", variant: "destructive" });
-      }
+      const response = await apiRequest("GET", `/api/coupons/validate?code=${code}`);
+      const coupon = await response.json();
+      const discountAmount = coupon.discountType === "percentage"
+        ? (subtotal * parseFloat(coupon.discountValue)) / 100
+        : parseFloat(coupon.discountValue);
+      setAppliedCoupon({ code: coupon.code, discount: discountAmount });
+      toast({ title: "Coupon applied!", description: `You saved ${formatPrice(discountAmount)}` });
     } catch {
-      toast({ title: "Error", description: "Failed to apply coupon", variant: "destructive" });
+      toast({ title: "Invalid coupon", description: "This coupon code is not valid", variant: "destructive" });
     }
   };
 
@@ -97,42 +92,23 @@ export default function Checkout() {
     setIsProcessing(true);
 
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          shippingAddress: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            addressLine1: formData.addressLine1,
-            addressLine2: formData.addressLine2,
-            city: formData.city,
-            state: formData.state,
-            postalCode: formData.postalCode,
-            country: "Nepal",
-          },
-          couponCode: appliedCoupon?.code,
-        }),
-        credentials: "include",
+      const response = await apiRequest("POST", "/api/orders", {
+        shippingAddress: {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          addressLine1: formData.addressLine1,
+          addressLine2: formData.addressLine2,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.postalCode,
+          country: "Nepal",
+        },
+        couponCode: appliedCoupon?.code,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create order");
-      }
 
       const order = await response.json();
       
-      const paymentResponse = await fetch("/api/payments/esewa/initiate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order.id }),
-        credentials: "include",
-      });
-
-      if (!paymentResponse.ok) {
-        throw new Error("Failed to initiate payment");
-      }
+      const paymentResponse = await apiRequest("POST", "/api/payments/esewa/initiate", { orderId: order.id });
 
       const paymentData = await paymentResponse.json();
       

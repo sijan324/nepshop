@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Layout } from "@/components/layout/Layout";
 import { formatPrice, formatDateTime, getOrderStatusColor, cn } from "@/lib/utils";
 import type { OrderWithItems } from "@/lib/types";
+import { apiRequest } from "@/lib/queryClient";
 
 const statusTimeline = [
   { status: "PENDING", label: "Order Placed", description: "Your order has been received", icon: Clock },
@@ -37,24 +38,16 @@ export default function TrackOrder() {
     setOrder(null);
 
     try {
-      const response = await fetch(`/api/orders/track?orderNumber=${encodeURIComponent(orderNumber)}`, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError("Order not found. Please check the order number and try again.");
-        } else {
-          setError("Failed to fetch order details. Please try again.");
-        }
-        return;
-      }
-
+      const response = await apiRequest("GET", `/api/orders/track?orderNumber=${encodeURIComponent(orderNumber)}`);
       const data = await response.json();
       setOrder(data);
       setLocation(`/track-order?order=${encodeURIComponent(orderNumber)}`, { replace: true });
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      if (err.message?.includes("404")) {
+        setError("Order not found. Please check the order number and try again.");
+      } else {
+        setError("Failed to fetch order details. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

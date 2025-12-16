@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import type { CartItemWithProduct, CartState } from "@/lib/types";
+import { apiRequest } from "@/lib/queryClient";
 
 interface CartContextType extends CartState {
   addItem: (productId: string, quantity?: number, variantId?: string) => Promise<void>;
@@ -22,11 +23,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const refreshCart = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/cart", { credentials: "include" });
-      if (response.ok) {
-        const data = await response.json();
-        setItems(data.items || []);
-      }
+      const response = await apiRequest("GET", "/api/cart");
+      const data = await response.json();
+      setItems(data.items || []);
     } catch {
       console.error("Failed to fetch cart");
     } finally {
@@ -39,61 +38,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [refreshCart]);
 
   const addItem = async (productId: string, quantity = 1, variantId?: string) => {
-    const response = await fetch("/api/cart/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, quantity, variantId }),
-      credentials: "include",
-    });
+    const response = await apiRequest("POST", "/api/cart/items", { productId, quantity, variantId });
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to add item");
-    }
-    
-    await refreshCart();
+    const data = await response.json();
+    setItems(data.items || []);
     setIsOpen(true);
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
-    const response = await fetch(`/api/cart/items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity }),
-      credentials: "include",
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to update quantity");
-    }
-    
-    await refreshCart();
+    const response = await apiRequest("PATCH", `/api/cart/items/${itemId}`, { quantity });
+    const data = await response.json();
+    setItems(data.items || []);
   };
 
   const removeItem = async (itemId: string) => {
-    const response = await fetch(`/api/cart/items/${itemId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to remove item");
-    }
-    
-    await refreshCart();
+    const response = await apiRequest("DELETE", `/api/cart/items/${itemId}`);
+    const data = await response.json();
+    setItems(data.items || []);
   };
 
   const clearCart = async () => {
-    const response = await fetch("/api/cart", {
-      method: "DELETE",
-      credentials: "include",
-    });
-    
-    if (!response.ok) {
-      throw new Error("Failed to clear cart");
-    }
-    
-    setItems([]);
+    const response = await apiRequest("DELETE", "/api/cart");
+    const data = await response.json();
+    setItems(data.items || []);
   };
 
   const subtotal = items.reduce((sum, item) => sum + parseFloat(item.price) * item.quantity, 0);
