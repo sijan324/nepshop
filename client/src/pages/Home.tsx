@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Layout } from "@/components/layout/Layout";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import type { ProductWithCategory, Category } from "@/lib/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   {
@@ -32,6 +33,7 @@ const features = [
 ];
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
   const { data: productsData, isLoading: loadingProducts } = useQuery<{ products: ProductWithCategory[]; total: number }>({
     queryKey: ["/api/products", { featured: true, limit: 8 }],
   });
@@ -166,25 +168,27 @@ export default function Home() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
-        <Card className="overflow-hidden bg-gradient-to-r from-primary to-primary/80">
-          <CardContent className="p-8 md:p-12">
-            <div className="max-w-2xl">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-4">
-                Get 10% Off Your First Order
-              </h2>
-              <p className="text-primary-foreground/80 mb-6">
-                Sign up for our newsletter and receive exclusive offers, early access to sales, and more.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button size="lg" variant="secondary" asChild>
-                  <Link href="/register" data-testid="button-signup-promo">
-                    Sign Up Now
-                  </Link>
-                </Button>
+        {!isAuthenticated && (
+          <Card className="overflow-hidden bg-gradient-to-r from-primary to-primary/80">
+            <CardContent className="p-8 md:p-12">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-4">
+                  Get 10% Off Your First Order
+                </h2>
+                <p className="text-primary-foreground/80 mb-6">
+                  Sign up for our newsletter and receive exclusive offers, early access to sales, and more.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button size="lg" variant="secondary" asChild>
+                    <Link href="/register" data-testid="button-signup-promo">
+                      Sign Up Now
+                    </Link>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </section>
     </Layout>
   );
