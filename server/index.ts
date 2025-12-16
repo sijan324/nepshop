@@ -3,9 +3,18 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import cors from "cors";
 
 const app = express();
 const httpServer = createServer(app);
+
+// Configure CORS to allow requests from Vercel
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+}));
 
 declare module "http" {
   interface IncomingMessage {
