@@ -6,6 +6,7 @@ import { createServer } from "http";
 import cors from "cors";
 
 const app = express();
+app.set("trust proxy", 1);
 const httpServer = createServer(app);
 
 // Configure CORS to allow requests from Vercel
