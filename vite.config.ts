@@ -19,8 +19,13 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    hmr: {
-      clientPort: 5000,
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
     },
     fs: {
       strict: true,

@@ -1,12 +1,16 @@
 services:
   - type: web
     name: nepshop
-    env: node
+    env: docker
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
+      - key: PORT
+        value: 5000
